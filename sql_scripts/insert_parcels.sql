@@ -9,6 +9,6 @@ SELECT
     NULL AS deleted_at,
     {dpt_insee}.geometry AS geometry,
     {dpt_insee}.idu AS id_parcellaire,
-    TRIM(LEADING '0' FROM {dpt_insee}.numero) AS num_parcel, {dpt_insee}.com_abs AS prefix, MAKE_DATE(2025, 1, 1) AS refreshed_at, -- get that date from ign source file
+    TRIM(LEADING '0' FROM {dpt_insee}.numero)::int4 AS num_parcel, {dpt_insee}.com_abs AS prefix, MAKE_DATE(2025, 1, 1) AS refreshed_at, -- get that date from ign source file
         {dpt_insee}.section AS section, now() AS updated_at, gen_random_uuid () AS uuid FROM parcels. {dpt_insee}
 JOIN "public".core_geocommune ON core_geocommune.iso_code = {dpt_insee}.code_dep || {dpt_insee}.code_com
