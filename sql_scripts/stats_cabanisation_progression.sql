@@ -188,136 +188,130 @@ UNION
   WHERE stats_parcelles_cabanisees_2018.situation_parcelles_cabanisees_2018 IS NOT NULL;
 
 
+-- detections.stats_epci_evolutions_cabanisation_raw_v2 source
 
 CREATE MATERIALIZED VIEW detections.stats_epci_evolutions_cabanisation_raw
 TABLESPACE pg_default
-AS 
-
-WITH stats_parcelles_cabanisees_2018 AS (
-    SELECT 
-        geozone_id,
-        COUNT(DISTINCT id_parcellaire) AS situation_parcelles_cabanisees_2018
-    FROM detections.stats_detections_epci_analysis
-    WHERE batch_year = 2018::numeric
-      AND id_parcellaire IS NOT NULL
-    GROUP BY geozone_id
-), 
-
-stats_parcelles_cabanisees_2021 AS (
-    SELECT 
-        geozone_id,
-        COUNT(DISTINCT id_parcellaire) AS situation_parcelles_cabanisees_2021
-    FROM detections.stats_detections_epci_analysis
-    WHERE batch_year = 2021::numeric
-      AND id_parcellaire IS NOT NULL
-    GROUP BY geozone_id
-), 
-
-stats_parcelles_cabanisees_2024 AS (
-    SELECT 
-        geozone_id,
-        COUNT(DISTINCT id_parcellaire) AS situation_parcelles_cabanisees_2024
-    FROM detections.stats_detections_epci_analysis
-    WHERE batch_year = 2024::numeric
-      AND id_parcellaire IS NOT NULL
-    GROUP BY geozone_id
-), 
-
-stats_nouvelles_parcelles_cabanisees_2021 AS (
-    SELECT 
-        endp.geozone_id,
-        COUNT(DISTINCT endp.id_parcellaire) AS nouvelles_parcelles_cabanisees_2021_vs_2018
-    FROM detections.stats_detections_epci_analysis endp
-    LEFT JOIN detections.stats_detections_epci_analysis startp
-      ON endp.id_parcellaire = startp.id_parcellaire
-     AND endp.geozone_id = startp.geozone_id
-     AND startp.batch_year = 2018
-    WHERE endp.batch_year = 2021
-      AND startp.id_parcellaire IS NULL
-    GROUP BY endp.geozone_id
-), 
-
-stats_nouvelles_parcelles_cabanisees_2024 AS (
-    SELECT 
-        endp.geozone_id,
-        COUNT(DISTINCT endp.id_parcellaire) AS nouvelles_parcelles_cabanisees_2024_vs_2021
-    FROM detections.stats_detections_epci_analysis endp
-    LEFT JOIN detections.stats_detections_epci_analysis startp
-      ON endp.id_parcellaire = startp.id_parcellaire
-     AND endp.geozone_id = startp.geozone_id
-     AND startp.batch_year = 2021
-    WHERE endp.batch_year = 2024
-      AND startp.id_parcellaire IS NULL
-    GROUP BY endp.geozone_id
-), 
-
-stats_parcelles_remises_en_etat_2021 AS (
-    SELECT 
-        startp.geozone_id,
-        COUNT(DISTINCT startp.id_parcellaire) AS parcelles_remises_en_etat_2021_vs_2018
-    FROM detections.stats_detections_epci_analysis startp
-    LEFT JOIN detections.stats_detections_epci_analysis endp
-      ON startp.id_parcellaire = endp.id_parcellaire
-     AND startp.geozone_id = endp.geozone_id
-     AND endp.batch_year = 2021
-    WHERE startp.batch_year = 2018
-      AND endp.id_parcellaire IS NULL
-    GROUP BY startp.geozone_id
-), 
-
-stats_parcelles_remises_en_etat_2024 AS (
-    SELECT 
-        startp.geozone_id,
-        COUNT(DISTINCT startp.id_parcellaire) AS parcelles_remises_en_etat_2024_vs_2021
-    FROM detections.stats_detections_epci_analysis startp
-    LEFT JOIN detections.stats_detections_epci_analysis endp
-      ON startp.id_parcellaire = endp.id_parcellaire
-     AND startp.geozone_id = endp.geozone_id
-     AND endp.batch_year = 2024
-    WHERE startp.batch_year = 2021
-      AND endp.id_parcellaire IS NULL
-    GROUP BY startp.geozone_id
-)
-
-SELECT 
-    cgz.name_normalized,
+AS WITH stats_parcelles_cabanisees_2015 AS (
+         SELECT stats_detections_epci_analysis_2015_2024.geozone_id,
+            count(DISTINCT stats_detections_epci_analysis_2015_2024.id_parcellaire) AS situation_parcelles_cabanisees_2015
+           FROM detections.stats_detections_epci_analysis_2015_2024
+          WHERE stats_detections_epci_analysis_2015_2024.batch_year = 2015::numeric AND stats_detections_epci_analysis_2015_2024.id_parcellaire IS NOT NULL
+          GROUP BY stats_detections_epci_analysis_2015_2024.geozone_id
+        ), stats_parcelles_cabanisees_2018 AS (
+         SELECT stats_detections_epci_analysis_2015_2024.geozone_id,
+            count(DISTINCT stats_detections_epci_analysis_2015_2024.id_parcellaire) AS situation_parcelles_cabanisees_2018
+           FROM detections.stats_detections_epci_analysis_2015_2024
+          WHERE stats_detections_epci_analysis_2015_2024.batch_year = 2018::numeric AND stats_detections_epci_analysis_2015_2024.id_parcellaire IS NOT NULL
+          GROUP BY stats_detections_epci_analysis_2015_2024.geozone_id
+        ), stats_parcelles_cabanisees_2021 AS (
+         SELECT stats_detections_epci_analysis_2015_2024.geozone_id,
+            count(DISTINCT stats_detections_epci_analysis_2015_2024.id_parcellaire) AS situation_parcelles_cabanisees_2021
+           FROM detections.stats_detections_epci_analysis_2015_2024
+          WHERE stats_detections_epci_analysis_2015_2024.batch_year = 2021::numeric AND stats_detections_epci_analysis_2015_2024.id_parcellaire IS NOT NULL
+          GROUP BY stats_detections_epci_analysis_2015_2024.geozone_id
+        ), stats_parcelles_cabanisees_2024 AS (
+         SELECT stats_detections_epci_analysis_2015_2024.geozone_id,
+            count(DISTINCT stats_detections_epci_analysis_2015_2024.id_parcellaire) AS situation_parcelles_cabanisees_2024
+           FROM detections.stats_detections_epci_analysis_2015_2024
+          WHERE stats_detections_epci_analysis_2015_2024.batch_year = 2024::numeric AND stats_detections_epci_analysis_2015_2024.id_parcellaire IS NOT NULL
+          GROUP BY stats_detections_epci_analysis_2015_2024.geozone_id
+        ), stats_nouvelles_parcelles_cabanisees_2018 AS (
+         SELECT endp.geozone_id,
+            count(DISTINCT endp.id_parcellaire) AS nouvelles_parcelles_cabanisees_2018_vs_2015
+           FROM detections.stats_detections_epci_analysis_2015_2024 endp
+             LEFT JOIN detections.stats_detections_epci_analysis_2015_2024 startp ON endp.id_parcellaire = startp.id_parcellaire AND endp.geozone_id = startp.geozone_id AND startp.batch_year = 2015::numeric
+          WHERE endp.batch_year = 2018::numeric AND startp.id_parcellaire IS NULL
+          GROUP BY endp.geozone_id
+        ), stats_nouvelles_parcelles_cabanisees_2021 AS (
+         SELECT endp.geozone_id,
+            count(DISTINCT endp.id_parcellaire) AS nouvelles_parcelles_cabanisees_2021_vs_2018
+           FROM detections.stats_detections_epci_analysis_2015_2024 endp
+             LEFT JOIN detections.stats_detections_epci_analysis_2015_2024 startp ON endp.id_parcellaire = startp.id_parcellaire AND endp.geozone_id = startp.geozone_id AND startp.batch_year = 2018::numeric
+          WHERE endp.batch_year = 2021::numeric AND startp.id_parcellaire IS NULL
+          GROUP BY endp.geozone_id
+        ), stats_nouvelles_parcelles_cabanisees_2024 AS (
+         SELECT endp.geozone_id,
+            count(DISTINCT endp.id_parcellaire) AS nouvelles_parcelles_cabanisees_2024_vs_2021
+           FROM detections.stats_detections_epci_analysis_2015_2024 endp
+             LEFT JOIN detections.stats_detections_epci_analysis_2015_2024 startp ON endp.id_parcellaire = startp.id_parcellaire AND endp.geozone_id = startp.geozone_id AND startp.batch_year = 2021::numeric
+          WHERE endp.batch_year = 2024::numeric AND startp.id_parcellaire IS NULL
+          GROUP BY endp.geozone_id
+        ), stats_parcelles_remises_en_etat_2018 AS (
+         SELECT startp.geozone_id,
+            count(DISTINCT startp.id_parcellaire) AS parcelles_remises_en_etat_2018_vs_2015
+           FROM detections.stats_detections_epci_analysis_2015_2024 startp
+             LEFT JOIN detections.stats_detections_epci_analysis_2015_2024 endp ON startp.id_parcellaire = endp.id_parcellaire AND startp.geozone_id = endp.geozone_id AND endp.batch_year = 2018::numeric
+          WHERE startp.batch_year = 2015::numeric AND endp.id_parcellaire IS NULL
+          GROUP BY startp.geozone_id
+        ), stats_parcelles_remises_en_etat_2021 AS (
+         SELECT startp.geozone_id,
+            count(DISTINCT startp.id_parcellaire) AS parcelles_remises_en_etat_2021_vs_2018
+           FROM detections.stats_detections_epci_analysis_2015_2024 startp
+             LEFT JOIN detections.stats_detections_epci_analysis_2015_2024 endp ON startp.id_parcellaire = endp.id_parcellaire AND startp.geozone_id = endp.geozone_id AND endp.batch_year = 2021::numeric
+          WHERE startp.batch_year = 2018::numeric AND endp.id_parcellaire IS NULL
+          GROUP BY startp.geozone_id
+        ), stats_parcelles_remises_en_etat_2024 AS (
+         SELECT startp.geozone_id,
+            count(DISTINCT startp.id_parcellaire) AS parcelles_remises_en_etat_2024_vs_2021
+           FROM detections.stats_detections_epci_analysis_2015_2024 startp
+             LEFT JOIN detections.stats_detections_epci_analysis_2015_2024 endp ON startp.id_parcellaire = endp.id_parcellaire AND startp.geozone_id = endp.geozone_id AND endp.batch_year = 2024::numeric
+          WHERE startp.batch_year = 2021::numeric AND endp.id_parcellaire IS NULL
+          GROUP BY startp.geozone_id
+        )
+ SELECT cgz.name_normalized,
     stats_parcelles_cabanisees_2021.geozone_id,
-    COALESCE(stats_parcelles_cabanisees_2021.situation_parcelles_cabanisees_2021, 0) AS situation_parcelles_cabanisees_debut_periode,
-    COALESCE(stats_parcelles_cabanisees_2024.situation_parcelles_cabanisees_2024, 0) AS situation_parcelles_cabanisees_fin_periode,
-    COALESCE(stats_nouvelles_parcelles_cabanisees_2024.nouvelles_parcelles_cabanisees_2024_vs_2021, 0) AS situation_nouvelles_parcelles_cabanisees_periode,
-    COALESCE(stats_parcelles_remises_en_etat_2024.parcelles_remises_en_etat_2024_vs_2021, 0) AS situation_parcelles_remises_en_etat_periode,
+    COALESCE(stats_parcelles_cabanisees_2021.situation_parcelles_cabanisees_2021, 0::bigint) AS situation_parcelles_cabanisees_debut_periode,
+    COALESCE(stats_parcelles_cabanisees_2024.situation_parcelles_cabanisees_2024, 0::bigint) AS situation_parcelles_cabanisees_fin_periode,
+    COALESCE(stats_nouvelles_parcelles_cabanisees_2024.nouvelles_parcelles_cabanisees_2024_vs_2021, 0::bigint) AS situation_nouvelles_parcelles_cabanisees_periode,
+    COALESCE(stats_parcelles_remises_en_etat_2024.parcelles_remises_en_etat_2024_vs_2021, 0::bigint) AS situation_parcelles_remises_en_etat_periode,
     '2021-2023'::text AS periode,
     COALESCE(spa.nb_parcels, 0) AS nb_parcels,
     COALESCE(spa.nb_parcels_in_ze, 0) AS nb_parcels_in_ze
-FROM stats_parcelles_cabanisees_2021
-LEFT JOIN core_geozone cgz ON stats_parcelles_cabanisees_2021.geozone_id = cgz.id::numeric
-LEFT JOIN stats_parcelles_cabanisees_2024 ON stats_parcelles_cabanisees_2021.geozone_id = stats_parcelles_cabanisees_2024.geozone_id
-LEFT JOIN stats_nouvelles_parcelles_cabanisees_2024 ON stats_parcelles_cabanisees_2021.geozone_id = stats_nouvelles_parcelles_cabanisees_2024.geozone_id
-LEFT JOIN stats_parcelles_remises_en_etat_2024 ON stats_parcelles_cabanisees_2021.geozone_id = stats_parcelles_remises_en_etat_2024.geozone_id
-LEFT JOIN detections.stats_epci_parcels_analysis spa ON stats_parcelles_cabanisees_2021.geozone_id = spa.geozone_id::numeric
-WHERE stats_parcelles_cabanisees_2021.situation_parcelles_cabanisees_2021 IS NOT NULL
-
+   FROM stats_parcelles_cabanisees_2021
+     LEFT JOIN core_geozone cgz ON stats_parcelles_cabanisees_2021.geozone_id = cgz.id::numeric
+     LEFT JOIN stats_parcelles_cabanisees_2024 ON stats_parcelles_cabanisees_2021.geozone_id = stats_parcelles_cabanisees_2024.geozone_id
+     LEFT JOIN stats_nouvelles_parcelles_cabanisees_2024 ON stats_parcelles_cabanisees_2021.geozone_id = stats_nouvelles_parcelles_cabanisees_2024.geozone_id
+     LEFT JOIN stats_parcelles_remises_en_etat_2024 ON stats_parcelles_cabanisees_2021.geozone_id = stats_parcelles_remises_en_etat_2024.geozone_id
+     LEFT JOIN detections.stats_epci_parcels_analysis spa ON stats_parcelles_cabanisees_2021.geozone_id = spa.geozone_id::numeric
+  WHERE stats_parcelles_cabanisees_2021.situation_parcelles_cabanisees_2021 IS NOT NULL
 UNION ALL
-
-SELECT 
-    cgz.name_normalized,
+ SELECT cgz.name_normalized,
     stats_parcelles_cabanisees_2018.geozone_id,
-    COALESCE(stats_parcelles_cabanisees_2018.situation_parcelles_cabanisees_2018, 0) AS situation_parcelles_cabanisees_debut_periode,
-    COALESCE(stats_parcelles_cabanisees_2021.situation_parcelles_cabanisees_2021, 0) AS situation_parcelles_cabanisees_fin_periode,
-    COALESCE(stats_nouvelles_parcelles_cabanisees_2021.nouvelles_parcelles_cabanisees_2021_vs_2018, 0) AS situation_nouvelles_parcelles_cabanisees_periode,
-    COALESCE(stats_parcelles_remises_en_etat_2021.parcelles_remises_en_etat_2021_vs_2018, 0) AS situation_parcelles_remises_en_etat_periode,
+    COALESCE(stats_parcelles_cabanisees_2018.situation_parcelles_cabanisees_2018, 0::bigint) AS situation_parcelles_cabanisees_debut_periode,
+    COALESCE(stats_parcelles_cabanisees_2021.situation_parcelles_cabanisees_2021, 0::bigint) AS situation_parcelles_cabanisees_fin_periode,
+    COALESCE(stats_nouvelles_parcelles_cabanisees_2021.nouvelles_parcelles_cabanisees_2021_vs_2018, 0::bigint) AS situation_nouvelles_parcelles_cabanisees_periode,
+    COALESCE(stats_parcelles_remises_en_etat_2021.parcelles_remises_en_etat_2021_vs_2018, 0::bigint) AS situation_parcelles_remises_en_etat_periode,
     '2018-2020'::text AS periode,
     COALESCE(spa.nb_parcels, 0) AS nb_parcels,
     COALESCE(spa.nb_parcels_in_ze, 0) AS nb_parcels_in_ze
-FROM stats_parcelles_cabanisees_2018
-LEFT JOIN core_geozone cgz ON stats_parcelles_cabanisees_2018.geozone_id = cgz.id::numeric
-LEFT JOIN stats_parcelles_cabanisees_2021 ON stats_parcelles_cabanisees_2018.geozone_id = stats_parcelles_cabanisees_2021.geozone_id
-LEFT JOIN stats_nouvelles_parcelles_cabanisees_2021 ON stats_parcelles_cabanisees_2018.geozone_id = stats_nouvelles_parcelles_cabanisees_2021.geozone_id
-LEFT JOIN stats_parcelles_remises_en_etat_2021 ON stats_parcelles_cabanisees_2018.geozone_id = stats_parcelles_remises_en_etat_2021.geozone_id
-LEFT JOIN detections.stats_epci_parcels_analysis spa ON stats_parcelles_cabanisees_2018.geozone_id = spa.geozone_id::numeric
-WHERE stats_parcelles_cabanisees_2018.situation_parcelles_cabanisees_2018 IS NOT NULL
-
+   FROM stats_parcelles_cabanisees_2018
+     LEFT JOIN core_geozone cgz ON stats_parcelles_cabanisees_2018.geozone_id = cgz.id::numeric
+     LEFT JOIN stats_parcelles_cabanisees_2021 ON stats_parcelles_cabanisees_2018.geozone_id = stats_parcelles_cabanisees_2021.geozone_id
+     LEFT JOIN stats_nouvelles_parcelles_cabanisees_2021 ON stats_parcelles_cabanisees_2018.geozone_id = stats_nouvelles_parcelles_cabanisees_2021.geozone_id
+     LEFT JOIN stats_parcelles_remises_en_etat_2021 ON stats_parcelles_cabanisees_2018.geozone_id = stats_parcelles_remises_en_etat_2021.geozone_id
+     LEFT JOIN detections.stats_epci_parcels_analysis spa ON stats_parcelles_cabanisees_2018.geozone_id = spa.geozone_id::numeric
+  WHERE stats_parcelles_cabanisees_2018.situation_parcelles_cabanisees_2018 IS NOT NULL
+UNION ALL
+ SELECT cgz.name_normalized,
+    stats_parcelles_cabanisees_2015.geozone_id,
+    COALESCE(stats_parcelles_cabanisees_2015.situation_parcelles_cabanisees_2015, 0::bigint) AS situation_parcelles_cabanisees_debut_periode,
+    COALESCE(stats_parcelles_cabanisees_2018.situation_parcelles_cabanisees_2018, 0::bigint) AS situation_parcelles_cabanisees_fin_periode,
+    COALESCE(stats_nouvelles_parcelles_cabanisees_2018.nouvelles_parcelles_cabanisees_2018_vs_2015, 0::bigint) AS situation_nouvelles_parcelles_cabanisees_periode,
+    COALESCE(stats_parcelles_remises_en_etat_2018.parcelles_remises_en_etat_2018_vs_2015, 0::bigint) AS situation_parcelles_remises_en_etat_periode,
+    '2015-2017'::text AS periode,
+    COALESCE(spa.nb_parcels, 0) AS nb_parcels,
+    COALESCE(spa.nb_parcels_in_ze, 0) AS nb_parcels_in_ze
+   FROM stats_parcelles_cabanisees_2015
+     LEFT JOIN core_geozone cgz ON stats_parcelles_cabanisees_2015.geozone_id = cgz.id::numeric
+     LEFT JOIN stats_parcelles_cabanisees_2018 ON stats_parcelles_cabanisees_2015.geozone_id = stats_parcelles_cabanisees_2018.geozone_id
+     LEFT JOIN stats_nouvelles_parcelles_cabanisees_2018 ON stats_parcelles_cabanisees_2015.geozone_id = stats_nouvelles_parcelles_cabanisees_2018.geozone_id
+     LEFT JOIN stats_parcelles_remises_en_etat_2018 ON stats_parcelles_cabanisees_2015.geozone_id = stats_parcelles_remises_en_etat_2018.geozone_id
+     LEFT JOIN detections.stats_epci_parcels_analysis spa ON stats_parcelles_cabanisees_2015.geozone_id = spa.geozone_id::numeric
+  WHERE stats_parcelles_cabanisees_2015.situation_parcelles_cabanisees_2015 IS NOT NULL
 WITH DATA;
+
+-- detections.stats_epci_evolutions_cabanisation source
 
 CREATE MATERIALIZED VIEW detections.stats_epci_evolutions_cabanisation
 TABLESPACE pg_default
@@ -471,3 +465,84 @@ WHERE s.dep_geozone_id NOT IN (
     SELECT dep_geozone_id FROM agg
 )
 WITH DATA;
+
+
+CREATE materialized VIEW detections.stats_prescription_epci_analysis_2015_2024
+TABLESPACE pg_default
+as WITH history AS (
+	SELECT
+	    a.id,
+	    a.id_parcellaire,
+	    a.batch_year,
+	    a.geometry,
+	    a.score,
+	    a.object_type,
+	    a.geozone_id,
+	    a.first_detection,
+	    COUNT(DISTINCT b.batch_year) AS count_histo_6y_detection
+	FROM detections.stats_detections_epci_analysis_2015_2024 a
+	LEFT JOIN detections.stats_detections_epci_analysis_2015_2024 b
+	    ON a.id_parcellaire = b.id_parcellaire
+	    AND a.batch_year - b.batch_year >= 6  
+	    AND ST_Area(ST_Intersection(a.geometry, b.geometry)) 
+	        / NULLIF(ST_Area(a.geometry), 0) >= 0.5
+    where a.object_type in ('construction en dur','piscine')
+	GROUP BY 
+	    a.id, a.id_parcellaire, a.batch_year,
+	    a.geometry, a.score, a.object_type, 
+	    a.geozone_id, a.first_detection   
+)
+SELECT
+    *,
+    CASE 
+        WHEN count_histo_6y_detection >= 1 THEN TRUE
+        ELSE FALSE
+    END AS prescripted_detection
+FROM history
+with DATA;
+
+-- visualize count unprescripted parcels
+with tmp_tab as (
+	select batch_year, id_parcellaire, sum(count_histo_6y_detection) as "nb_prescripted_detection" FROM detections.stats_prescription_epci_analysis_2015_2024
+	group by batch_year, id_parcellaire
+	)
+select batch_year, (count(distinct id_parcellaire) * 0.705 * (1- 0.252))::int as nb_unprescripted_parcels
+from tmp_tab where nb_prescripted_detection = 0 and batch_year >2018
+group by batch_year;
+
+-- control an unprescripted parcel
+with tmp_tab as (
+	select batch_year, id_parcellaire, sum(count_histo_6y_detection) as "nb_prescripted_detection" FROM detections.stats_prescription_epci_analysis_2015_2024
+	group by batch_year, id_parcellaire
+	)
+select batch_year, id_parcellaire, nb_prescripted_detection
+from tmp_tab where nb_prescripted_detection = 0 and batch_year = 2024
+
+-- get stats by zone type
+-- et question juste pour etre sur, on a une superposition partielle des zones a enjeux, donc si je separe les résultats par zone, on ne retombe pas sur la somme exacte (car certaines parcelles/detections sont dans plusieurs zones a la fois),  c est ok?
+WITH parcel_flags AS (
+         SELECT 
+            id_parcellaire,
+            bool_or(st_within(st_setsrid(fhp.geometry, 4326), ( SELECT geozone.geometry
+                   FROM public.core_geozone geozone
+                  WHERE geozone.id = 351))) AS "in_ZAN",
+            bool_or(st_within(st_setsrid(fhp.geometry, 4326), ( SELECT geozone.geometry
+                   FROM public.core_geozone geozone
+                  WHERE geozone.id = 352)) ) AS "in_ZRF",
+            bool_or(
+            	st_within(st_setsrid(fhp.geometry, 4326), (SELECT geozone.geometry
+                   FROM public.core_geozone geozone
+                  WHERE geozone.id = 361))) AS "in_ZFEE"
+           FROM detections.fr_herault_parcels fhp 
+           where  fhp.id_parcellaire in (select distinct id_parcellaire from detections.stats_prescription_epci_analysis_2015_2024 sp where batch_year = 2024)
+           group by id_parcellaire
+        )
+SELECT 
+    (SUM(CASE WHEN "in_ZAN"  THEN 1 ELSE 0 END) * 0.705 * (1- 0.252))::int AS parcels_in_ZAN,
+    (SUM(CASE WHEN "in_ZRF"  THEN 1 ELSE 0 END) * 0.705 * (1- 0.252))::int AS parcels_in_ZRF,
+    (SUM(CASE WHEN "in_ZFEE" THEN 1 ELSE 0 END) * 0.705 * (1- 0.252))::int AS parcels_in_ZFEE
+FROM parcel_flags;
+
+-- get stats evol by classes 
+select batch_year, object_type, count(1) from stats_detections_epci_analysis_2015_2024 where batch_year in (2018,2021, 2024)
+group by batch_year, object_type;
