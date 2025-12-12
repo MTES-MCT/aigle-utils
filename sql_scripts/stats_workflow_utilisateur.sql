@@ -44,23 +44,36 @@ INSERT INTO analytics.workflow_transitions_lucca (from_step, to_step) VALUES
 ('2A', '3A'),
 ('2A', '3B'),
 ('2A', '7A'),
+('2A', '7B'),
+('2A', '6'),
 ('2B', '3A'),
 ('2B', '3B'),
 ('2B', '7A'),
+('2B', '7B'),
+('2B', '6'),
 
 -- PV → PV reactualisation or courrier
 ('3A', '4'),
-('3A', '5'),
+('3A', '7A'),
+('3A', '7B'),
+('3A', '6'),
 ('3B', '4'),
-('3B', '5'),
+('3B', '7A'),
+('3B', '7B'),
+('3B', '6'),
 
 -- Courrier →  reactualisation, justice decision
-('4', '6'),
 ('4', '5'),
+('4', '6'),
+('4', '7A'),
+('4', '7B'),
 
 -- reactalisation -> PV
 ('5', '2A'),
 ('5', '2B'),
+('5', '6'),
+('5', '7A'),
+('5', '7B'),
 
 -- Justice → Clôture
 ('6','5'),
@@ -113,49 +126,73 @@ where next_action_date is not null;
 -- a. aggreger une vue historique sur l'import et sur l'app
 -- selectionner les actions liées a l'import (detectées par history_type = '+')
 -- selectionner les actions liées a l'import (detectées par history_type = '+')
-CREATE MATERIALIZED VIEW analytics.tracked_import_changes_30169_ze_2024_v1 AS
-with "track_import_changes" as (
-   SELECT distinct on (detection_id, detection_data_id, history_id) ch.id as detection_id,
-   chdata.id as detection_data_id,
-   ch.history_id,
-   ch.history_date,
-   cho.parcel_id, 
-   'admin_import@beta.gouv.fr' as "email",
-   'Admin import' as "group_name",
-   chdata.changed_fields,
-   'IMPORTED' as "old_pre_status",
-   'IMPORTED' as "old_val_status",
-   'IMPORTED' as "old_ctl_status",
-   (case when chdata.detection_prescription_status is null and ch.auto_prescribed is not true then 'NOT_PRESCRIBED' 
-   		when chdata.detection_prescription_status is null and ch.auto_prescribed is true then 'PRESCRIBED' 
-   		else chdata.detection_prescription_status END) as "new_pre_status",
-   (case when chdata.detection_validation_status is null then 'DETECTED_NOT_VERIFIED' else chdata.detection_validation_status end) as "new_val_status",
-   (case when chdata.detection_control_status is null then 'NOT_CONTROLLED' else chdata.detection_control_status end) as "new_ctl_status"
-   FROM core_historicaldetectiondata chdata
-     LEFT JOIN core_historicaldetection ch ON chdata.id = ch.detection_data_id
-     LEFT JOIN core_historicaldetectionobject cho ON ch.detection_object_id = cho.id
-   WHERE ch.tile_set_id = 19 
-	  AND st_within(ch.geometry, ( SELECT core_geozone.geometry
-	           FROM core_geozone
-	          WHERE core_geozone.id = 979)) 
-	  AND (st_within(ch.geometry, ( SELECT core_geozone.geometry
-	           FROM core_geozone
-	          WHERE core_geozone.id = 1520)) OR st_within(ch.geometry, ( SELECT core_geozone.geometry
-	           FROM core_geozone
-	          WHERE core_geozone.id = 1521)) OR st_within(ch.geometry, ( SELECT core_geozone.geometry
-	           FROM core_geozone
-	          WHERE core_geozone.id = 1522))) 
-	  AND ch.score > 0.3::double precision
-	  -- we consider that import is done in two step, first insertion then autoprescription control
-	  and ((chdata.history_type = '+' and ch.history_type = '+') or (ch.history_type = '~' and ch.auto_prescribed is true and chdata.changed_fields is null ))
-	  )
-select distinct on (detection_data_id, old_status) track_import_changes.*,
-	old_val_status || '.' || old_ctl_status || '.' || old_pre_status  as "old_status",
-   new_val_status || '.' || new_ctl_status || '.' || new_pre_status as "new_status"
-from track_import_changes
--- to keep only the last history of import with history_id DESC combined to distinct on only (detection_data_id, old_status)
-order by detection_data_id, old_status, history_id DESC
-with data;
+
+CREATE MATERIALIZED VIEW analytics.tracked_import_changes_30169_ze_2024_v1
+TABLESPACE pg_default
+AS 
+WITH track_import_changes AS (
+         SELECT --DISTINCT ON (ch.id, chdata.id, ch.history_id)
+         	ch.id AS detection_id,
+            chdata.id AS detection_data_id,
+            chdata.history_id,
+            chdata.history_date,
+            cho.parcel_id,
+            'admin_import@beta.gouv.fr'::text AS email,
+            'Admin import'::text AS group_name,
+            chdata.changed_fields,
+            chdata.history_type,
+            'IMPORTED'::text AS old_pre_status,
+            'IMPORTED'::text AS old_val_status,
+            'IMPORTED'::text AS old_ctl_status,
+                CASE
+                    WHEN chdata.detection_prescription_status IS NULL AND ch.auto_prescribed IS NOT TRUE THEN 'NOT_PRESCRIBED'::character varying
+                    WHEN chdata.detection_prescription_status IS NULL AND ch.auto_prescribed IS TRUE THEN 'PRESCRIBED'::character varying
+                    ELSE chdata.detection_prescription_status
+                END AS new_pre_status,
+                CASE
+                    WHEN chdata.detection_validation_status IS NULL THEN 'DETECTED_NOT_VERIFIED'::character varying
+                    ELSE chdata.detection_validation_status
+                END AS new_val_status,
+                CASE
+                    WHEN chdata.detection_control_status IS NULL THEN 'NOT_CONTROLLED'::character varying
+                    ELSE chdata.detection_control_status
+                END AS new_ctl_status
+           FROM core_historicaldetectiondata chdata
+             LEFT JOIN core_historicaldetection ch ON chdata.id = ch.detection_data_id
+             LEFT JOIN core_historicaldetectionobject cho ON ch.detection_object_id = cho.id
+          WHERE 
+          --ch.id = 6745499 and
+          ch.tile_set_id = 19 AND st_within(ch.geometry, ( SELECT core_geozone.geometry
+                   FROM core_geozone
+                  WHERE core_geozone.id = 979)) AND (st_within(ch.geometry, ( SELECT core_geozone.geometry
+                   FROM core_geozone
+                  WHERE core_geozone.id = 1520)) OR st_within(ch.geometry, ( SELECT core_geozone.geometry
+                   FROM core_geozone
+                  WHERE core_geozone.id = 1521)) OR st_within(ch.geometry, ( SELECT core_geozone.geometry
+                   FROM core_geozone
+                  WHERE core_geozone.id = 1522))) 
+          AND ch.score > 0.3::double precision 
+          AND ((chdata.history_type::text = '+'::text) or (chdata.history_type::text = '~'::text and chdata.changed_fields is null))
+        )
+ SELECT DISTINCT ON (detection_data_id, ((((old_val_status || '.'::text) || old_ctl_status) || '.'::text) || old_pre_status)) detection_id,
+    detection_data_id,
+    history_id,
+    history_date,
+    parcel_id,
+    email,
+    group_name,
+    changed_fields,
+    old_pre_status,
+    old_val_status,
+    old_ctl_status,
+    new_pre_status,
+    new_val_status,
+    new_ctl_status,
+    (((old_val_status || '.'::text) || old_ctl_status) || '.'::text) || old_pre_status AS old_status,
+    (((new_val_status::text || '.'::text) || new_ctl_status::text) || '.'::text) || new_pre_status::text AS new_status
+   FROM track_import_changes
+  ORDER BY detection_data_id, ((((old_val_status || '.'::text) || old_ctl_status) || '.'::text) || old_pre_status), history_id desc
+  with data;
 
 
 -- analytics.tracked_changes_30169_ze_2024_v1 source
@@ -328,6 +365,8 @@ CREATE TABLE analytics.workflow_transitions (
 INSERT INTO analytics.workflow_transitions (from_step, to_step) VALUES
 -- Importé vers statuts propagés
 ('0', '1'),
+('0', '2C'),
+('0', '2B'),
 ('0', '3B'),
 
 
