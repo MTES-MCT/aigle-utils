@@ -1,4 +1,9 @@
 -- prerequisites: create temporary table in target database, here for the example: detections.import_from_preprod
+--
+-- {unique_batch_identifier} must be unique PER SOURCE SCHEMA, not per year: core_detection.id
+-- is only unique within one preprod database, so two extracts labelled the same collide on
+-- import_id. That happened with 'sia_2018' (Hérault + Gard, 35931 collisions) and is now
+-- rejected by UNIQUE (batch_id, import_id) on core_detection. Use e.g. sia_2018_herault.
 WITH geometry_union AS (
     SELECT
         ST_Union (core_geozone.geometry) AS "geometry"
