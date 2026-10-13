@@ -29,7 +29,7 @@ UPDATE
 SET
     geometry = (
         SELECT
-            geometry
+            geometry::geometry
         FROM
             regions
         WHERE
@@ -60,7 +60,8 @@ SELECT
     now() AS updated_at,
     FALSE AS "deleted",
     'REGION' AS "geo_zone_type",
-    geometry,
+    geometry::geometry,
+,
     nom AS "name",
     normalize_text (nom) AS name_normalized
 FROM
